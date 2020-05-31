@@ -1,5 +1,27 @@
-import { of, fromEvent, interval, from, Observable, Subject, ReplaySubject } from 'rxjs'; 
-import { take, map, mergeMap, concatMap, switchMap, exhaustMap, delay, groupBy, scan, mergeAll, reduce, tap  } from 'rxjs/operators';
+import {
+  of,
+  fromEvent,
+  interval,
+  from,
+  Observable,
+  Subject,
+  ReplaySubject,
+  BehaviorSubject
+} from "rxjs";
+import {
+  take,
+  map,
+  mergeMap,
+  concatMap,
+  switchMap,
+  exhaustMap,
+  delay,
+  groupBy,
+  scan,
+  mergeAll,
+  reduce,
+  tap
+} from "rxjs/operators";
 
 console.clear();
 
@@ -22,9 +44,8 @@ let obs$ = interval(1000);
 
 obs$.pipe(
   take(10),
-  map( x => `conteo ${x}` )
-)//.subscribe( console.log );
-
+  map(x => `conteo ${x}`)
+); //.subscribe( console.log );
 
 /**
  * Observable froEvent => escucha un evento del document especifico
@@ -32,17 +53,16 @@ obs$.pipe(
  * Operador concatMap => ejecuta el observable secuencialmente (cuando finalize el actual, inicia el siguiente) y emite su valor como un observable.
  * Operador switchMap => ejecuta el observable hasta recibir otro evento, (cancela el observable actual y ejecuta el nuevo observeble) y emite su valor como un observable.
  * Operador exhaustMap => omite todas las ejecuciones hasta terminar el observeble actual y emite su valor como un observable.
- * 
+ *
  */
-let click$ = fromEvent<MouseEvent>( document, 'click');
+let click$ = fromEvent<MouseEvent>(document, "click");
 
 click$.pipe(
   //mergeMap( ev => interval(1000).pipe(take(4)) )
   //concatMap( ev => interval(1000).pipe(take(4)) )
   //switchMap( ev => interval(500).pipe(take(4)) )
-  exhaustMap( ev => interval(500).pipe(take(10)) )
-)//.subscribe(console.log)
-
+  exhaustMap(ev => interval(500).pipe(take(10)))
+); //.subscribe(console.log)
 
 /*******************************************************
  * Segunda parte observables de primer oreden
@@ -62,8 +82,8 @@ let events$ = from([
   { playerId: 2, points: 2 },
   { playerId: 3, points: 4 },
   { playerId: 2, points: 2 },
-  { playerId: 1, points: 1 },
-]).pipe( concatMap( e => of(e).pipe( delay(500), ) ) );
+  { playerId: 1, points: 1 }
+]).pipe(concatMap(e => of(e).pipe(delay(500))));
 
 let sumPoints = (playerSum, player) => {
   return {
@@ -79,19 +99,20 @@ let sumPoints = (playerSum, player) => {
  * operador mergeAll => escucha y guarda todas las emisiones realizadas y emite su valor
  */
 
-events$
-  .pipe(
-    groupBy(p => p.playerId),
-    //map(player$ => player$.pipe(reduce(sumPoints))),
-    map(player$ => player$.pipe(
-      tap( x => console.log('valores originales', x) ),
-      scan(sumPoints),
-    )),
-    mergeAll()
-  )//.subscribe(x => console.log(x));
+events$.pipe(
+  groupBy(p => p.playerId),
+  //map(player$ => player$.pipe(reduce(sumPoints))),
+  map(player$ =>
+    player$.pipe(
+      tap(x => console.log("valores originales", x)),
+      scan(sumPoints)
+    )
+  ),
+  mergeAll()
+); //.subscribe(x => console.log(x));
 
 /******************************************************************************
- * Tercera parte Observables frios y calientes => hot and could observables
+ * Tercera parte Observables frios y calientes => hot and cold observables
  ******************************************************************************/
 
 let random$ = new Observable(observer => {
@@ -99,12 +120,11 @@ let random$ = new Observable(observer => {
 }).pipe(take(7));
 
 /**
- * Observables frios => could observable
+ * Observables frios => cold observable
  *  son subcripciones independientes al observable y su data es direfente
  */
-let sub_random1 = random$//.subscribe(x => console.log("Subscriber 1: " + x));
-let sub_random2 = random$//.subscribe(x => console.log("Subscriber 2: " + x));
-
+let sub_random1 = random$; //.subscribe(x => console.log("Subscriber 1: " + x));
+let sub_random2 = random$; //.subscribe(x => console.log("Subscriber 2: " + x));
 
 /**
  * Observables calientes => hot observable
@@ -135,45 +155,61 @@ let obs2 = {
   }
 };
 
-random$//.subscribe(bridgeObserver);
+random$; //.subscribe(bridgeObserver);
 bridgeObserver.addObserver(obs1);
 bridgeObserver.addObserver(obs2);
 
-
 /**
  * Observables calientes => hot observable
- *  Configuracion con el subject => 
+ *  Configuracion con el subject =>
  *    emite los valores despues de la subscripcion, y emite los valores desde la subscripcion
  */
 
 let subject$ = new Subject();
-let subscription = random$.subscribe( subject$ );
+let subscription = random$.subscribe(subject$);
 
-let subs1 = subject$//.subscribe(x => console.log("Subscriber 1: " + x));
-let subs2 = subject$//.subscribe(x => console.log("Subscriber 2: " + x));
+let subs1 = subject$; //.subscribe(x => console.log("Subscriber 1: " + x));
+let subs2 = subject$; //.subscribe(x => console.log("Subscriber 2: " + x));
 
 /**
  * Observables calientes => hot observable
- *   utilizando subject ReplaySubject => 
- *    este segun la configuracion emite la cantidad de valores configurados 
+ *   utilizando subject ReplaySubject =>
+ *    este segun la configuracion emite la cantidad de valores configurados
  *    para las futuras subscripciones
- *  
+ *
  */
 
 let subjectRP = new ReplaySubject(2);
 
-subjectRP.next('a');
-subjectRP.next('b');
-subjectRP.next('c');
+subjectRP.next("a");
+subjectRP.next("b");
+subjectRP.next("c");
 
-subjectRP//.subscribe(x => console.log(`Subscriber 1: ${x} `));
-subjectRP//.subscribe(x => console.log(`Subscriber 2: ${x} `));
+subjectRP; //.subscribe(x => console.log(`Subscriber 1: ${x} `));
+subjectRP; //.subscribe(x => console.log(`Subscriber 2: ${x} `));
 
-setTimeout(
+/*setTimeout(
   () => subjectRP.subscribe(x => console.log(`Subscriber 3: ${x}`)),
   2000
-);
+);*/
 
+subjectRP.next(2);
 subjectRP.next(1);
 subjectRP.next(2);
 subjectRP.complete;
+
+/**
+ * Observables calientes => hot observable
+ *   utilizando subject BehaviorSubject =>
+ *    require inicialización de valor a emitir
+ *    emite el ultimo valor emitido.
+ */
+
+let subjectBS = new BehaviorSubject('');
+
+subjectBS.next("a");
+subjectBS.next("c");
+subjectBS.next("b");
+
+subjectBS.subscribe(x => console.log(`Subscriber 1: ${x} `));
+subjectBS; //.subscribe(x => console.log(`Subscriber 2: ${x} `));
