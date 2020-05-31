@@ -6,7 +6,9 @@ import {
   Observable,
   Subject,
   ReplaySubject,
-  BehaviorSubject
+  BehaviorSubject,
+throwError,
+timer
 } from "rxjs";
 import {
   take,
@@ -20,7 +22,11 @@ import {
   scan,
   mergeAll,
   reduce,
-  tap
+  tap,
+catchError,
+retry,
+retryWhen,
+delayWhen
 } from "rxjs/operators";
 
 console.clear();
@@ -211,5 +217,63 @@ subjectBS.next("a");
 subjectBS.next("c");
 subjectBS.next("b");
 
-subjectBS.subscribe(x => console.log(`Subscriber 1: ${x} `));
+subjectBS; //.subscribe(x => console.log(`Subscriber 1: ${x} `));
 subjectBS; //.subscribe(x => console.log(`Subscriber 2: ${x} `));
+
+
+/*******************************************************
+ * Tercera parte manejo de errores
+ *******************************************************/
+
+/**
+ * Se define un stream con la funcion de error de RxJs, 
+ * por lo cual simpre que se subcriba se genera un error
+ * 
+ * definicion del error
+ */
+
+const stream = throwError("This is an error");
+
+/**
+ * Ejemplo 1, manejo de errores con RxJs
+ *  Se realiza la subscripcion del stream error 
+ *  y se maneja el error con el operador catchError en el pipe
+ */
+const example1 = stream.pipe(
+  catchError(err => of("I caught " + err))
+)//.subscribe(x => console.log(x));
+
+/**
+ * Ejemplo 2, manejo de errores con RxJs
+ *  Se realiza la subscripcion a un stream interval con emision de 1 segundo
+ *  se evalua si el dato es mayor a un valor random para generar un error
+ */
+const example2 = interval(500).pipe(
+  mergeMap((value, index) => {
+    let random = Math.floor(Math.random() * 10);
+    console.log(`indice: ${ index } - valor del stream: ${ value } - valor random: ${ random }`);
+    if (value > random) {
+      console.log(value);
+      return throwError("ERROR: BOOM!");
+    }
+    return of(value);
+  }),
+  retry(2),
+  /*retryWhen(error =>
+    error.pipe(
+      tap(value =>
+        console.log(`${value} occured! I will retry in 2 seconds...`)
+      ),
+      delayWhen(value => timer(2000)),
+    )
+  )*/
+);
+
+/**
+ *  Se realiza la subscripcion al stream del ejemplo 
+ *  y se canaliza el error en la subscripcion con la funciona de error del Observable
+ */
+example2.subscribe(
+  x => console.log(x), 
+  error => console.log(error)
+);
